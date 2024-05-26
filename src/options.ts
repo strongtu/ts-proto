@@ -78,6 +78,8 @@ export type Options = {
   useReadonlyTypes: boolean;
   useSnakeTypeName: boolean;
   M: { [from: string]: string };
+  useJsonObjRpcType: boolean;
+  usePartialReqType: boolean;
 };
 
 export function defaultOptions(): Options {
@@ -125,6 +127,8 @@ export function defaultOptions(): Options {
     useReadonlyTypes: false,
     useSnakeTypeName: true,
     M: {},
+    useJsonObjRpcType:false,
+    usePartialReqType :false,
   };
 }
 

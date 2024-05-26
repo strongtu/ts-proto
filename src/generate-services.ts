@@ -111,7 +111,7 @@ function generateRegularRpcMethod(ctx: Context, methodDesc: MethodDescriptorProt
   const { options } = ctx;
   const Reader = impFile(ctx.options, "Reader@protobufjs/minimal");
   const rawInputType = rawRequestType(ctx, methodDesc, { keepValueType: true });
-  const inputType = requestType(ctx, methodDesc);
+  const inputType = requestType(ctx, methodDesc, options.usePartialReqType ? true : false);
   const rawOutputType = responseType(ctx, methodDesc, { keepValueType: true });
 
   const params = [
@@ -145,7 +145,7 @@ function generateRegularRpcMethod(ctx: Context, methodDesc: MethodDescriptorProt
     }
   } else {
     returnVariable = "promise";
-    decode = code`promise.then(${decode})`;
+    decode = options.useJsonObjRpcType ? code`promise` : code`promise.then(${decode})`;
   }
 
   let rpcMethod: string;
@@ -159,11 +159,13 @@ function generateRegularRpcMethod(ctx: Context, methodDesc: MethodDescriptorProt
     rpcMethod = "request";
   }
 
+  const data = options.useJsonObjRpcType ? "request" : encode;
+  
   return code`
     ${methodDesc.formattedName}(
       ${joinCode(params, { on: "," })}
     ): ${responsePromiseOrObservable(ctx, methodDesc)} {
-      const data = ${encode};
+      const data = ${data};
       const ${returnVariable} = this.rpc.${rpcMethod}(
         ${maybeCtx}
         this.service,
@@ -336,7 +338,8 @@ export function generateRpcType(ctx: Context, hasStreamingMethods: boolean): Cod
   const maybeContext = options.context ? "<Context>" : "";
   const maybeContextParam = options.context ? "ctx: Context," : "";
   const maybeAbortSignalParam = options.useAbortSignal ? "abortSignal?: AbortSignal," : "";
-  const methods = [[code`request`, code`Uint8Array`, code`Promise<Uint8Array>`]];
+  const methodType = options.useJsonObjRpcType ? "any" : "Uint8Array";
+  const methods = [[code`request`, code`${methodType}`, code`Promise<${methodType}>`]];
   if (hasStreamingMethods) {
     const observable = observableType(ctx);
     methods.push([code`clientStreamingRequest`, code`${observable}<Uint8Array>`, code`Promise<Uint8Array>`]);
